@@ -1,0 +1,9 @@
+# gitignore(5) file
+*.[oa]
+*~
+.*.swp
+# work directories
+chaos
+# generated files
+www/html
+array_test
