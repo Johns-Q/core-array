@@ -20,21 +20,20 @@
 #	$Id$
 #----------------------------------------------------------------------------
 
-VERSION := "1.00"
+VERSION := "0.50"
 GIT_REV := $(shell git describe --always 2>/dev/null)
 
 CC	:= gcc
-#OPTIM	:= -march=native -O2 -fomit-frame-pointer
-OPTIM	:= -march=native # -m32
-CFLAGS	= $(OPTIM) -W -Wall -Wextra -g -pipe -DARRAY_TEST -DDEBUG_ARRAY\
+OPTIM	:= -march=native -O2 -fomit-frame-pointer
+#OPTIM	:= -march=native # -m32
+CFLAGS	= $(OPTIM) -W -Wall -Wextra -g -pipe -DARRAY_TEST -DDEBUG_ARRAY \
 	-DVERSION='$(VERSION)' $(if $(GIT_REV), -DGIT_REV='"$(GIT_REV)"')
 #STATIC= --static
 LIBS	= $(STATIC)
 
 HDRS	:= core-array.h
-OBJS	:= core-array.o
-FILES	:= Makefile README.txt Changelog AGPL-3.0.txt core-array.doxyfile \
-	core-array.h core-core.c
+OBJS	:= core-array2.o
+FILES	:= Makefile README.txt Changelog AGPL-3.0.txt core-array.doxyfile
 
 all:	array_test
 
@@ -63,8 +62,8 @@ clobber:	clean
 	-rm -rf array_test man www/html
 
 dist:
-	tar cjCf .. wmcpumon-`date +%F-%H`.tar.bz2 \
-		$(addprefix core-array/, $(FILES) $(OBJS:.o=.c))
+	tar cjCf .. core-array-`date +%F-%H`.tar.bz2 \
+		$(addprefix core-array/, $(FILES) $(HDRS) $(OBJS:.o=.c))
 
 install:
 	##strip --strip-unneeded -R .comment binary_file
