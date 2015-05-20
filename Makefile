@@ -1,7 +1,7 @@
 #
 #	@file Makefile		@brief core general purpose array Makefile.
 #
-#	Copyright (c) 2010 by Lutz Sammer.  All Rights Reserved.
+#	Copyright (c) 2010, 2015 by Lutz Sammer.  All Rights Reserved.
 #
 #	Contributor(s):
 #
@@ -20,24 +20,25 @@
 #	$Id$
 #----------------------------------------------------------------------------
 
-VERSION := "0.50"
+VERSION := "0.51"
 GIT_REV := $(shell git describe --always 2>/dev/null)
 
 CC	:= gcc
 OPTIM	:= -march=native -O2 -fomit-frame-pointer
 #OPTIM	:= -march=native # -m32
-CFLAGS	= $(OPTIM) -W -Wall -Wextra -g -pipe -DARRAY_TEST -DDEBUG_ARRAY \
+CFLAGS	= $(OPTIM) -W -Wall -Wextra -g -pipe -DARRAY_TEST -DARRAY_DEBUG \
+	-DFreeMem=FreeMem -DAllocMem=AllocMem \
 	-DVERSION='$(VERSION)' $(if $(GIT_REV), -DGIT_REV='"$(GIT_REV)"')
 #STATIC= --static
 LIBS	= $(STATIC)
 
 HDRS	:= core-array.h
-OBJS	:= core-array2.o
+OBJS	:= core-array.o
 FILES	:= Makefile README.txt Changelog AGPL-3.0.txt core-array.doxyfile
 
 all:	array_test
 
-array_test	: $(OBJS)
+array_test: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(OBJS)	: Makefile $(HDRS)

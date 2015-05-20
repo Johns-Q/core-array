@@ -1,7 +1,7 @@
 ///
 ///	@file core-array.c	@brief core array functions
 ///
-///	Copyright (c) 2009, 2010 by Lutz Sammer.  All Rights Reserved.
+///	Copyright (c) 2009, 2010, 2015 by Lutz Sammer.	All Rights Reserved.
 ///
 ///	Contributor(s):
 ///
@@ -41,13 +41,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <getopt.h>
 #include <string.h>
 
 #include "core-array.h"
 
-#ifndef NO_DEBUG
-#define NO_DEBUG			///< debug enabled/disabled
+#ifndef NO_ARRAY_DEBUG
+#define NO_ARRAY_DEBUG			///< debug enabled/disabled
 #endif
 
 /*
@@ -118,6 +117,7 @@ hybrid
 #endif
 
 #if 0
+
 /**
 **	I could use ArrayWordType, but i prefer just using standard types.
 */
@@ -296,23 +296,34 @@ static const int ArrayBurstSize = 256;
 
 // -------------------------------------------------------------------------
 
+extern inline void *AllocMem(size_t);
+extern inline void FreeMem(void *, size_t);
+
+#ifndef AllocMem
+
 /**
 **	better malloc
 **
 **	@param size	size of memory area to allocate
 */
-static void *AllocMem(size_t size)
+static inline void *AllocMem(size_t size)
 {
     return malloc(size);
 }
 
+#endif
+
+#ifndef FreeMem
+
 /**
 **	better free
 */
-static void FreeMem(void *data, __attribute__ ((unused)) size_t size)
+static inline void FreeMem(void *data, __attribute__ ((unused)) size_t size)
 {
     free(data);
 }
+
+#endif
 
 // -------------------------------------------------------------------------
 // Helper functions
@@ -324,7 +335,7 @@ static void FreeMem(void *data, __attribute__ ((unused)) size_t size)
 **	@param cnt	number of bytes of key to store
 **	@param key	key to be stored
 */
-static void ArrayStoreKey(uint8_t * adr, const int cnt, size_t key)
+static inline void ArrayStoreKey(uint8_t * adr, const int cnt, size_t key)
 {
     switch (cnt) {
 #ifdef ARRAY64
@@ -357,7 +368,7 @@ static void ArrayStoreKey(uint8_t * adr, const int cnt, size_t key)
 **
 **	@returns key fetched from bucket.
 */
-static size_t ArrayFetchKey(const uint8_t * adr, const int cnt)
+static inline size_t ArrayFetchKey(const uint8_t * adr, const int cnt)
 {
     register size_t key;
 
@@ -374,13 +385,13 @@ static size_t ArrayFetchKey(const uint8_t * adr, const int cnt)
 	    key |= (size_t) adr[4] << 32;
 #endif
 	case 4:
-	    key |= adr[3] << 24;
+	    key |= (size_t) adr[3] << 24;
 	case 3:
-	    key |= adr[2] << 16;
+	    key |= (size_t) adr[2] << 16;
 	case 2:
-	    key |= adr[1] << 8;
+	    key |= (size_t) adr[1] << 8;
 	case 1:
-	    key |= adr[0];
+	    key |= (size_t) adr[0];
 	    break;
     }
     return key;
@@ -393,7 +404,8 @@ static size_t ArrayFetchKey(const uint8_t * adr, const int cnt)
 **	@param offset	offset into array bucket where key stored
 **	@param key_len	length of stored key in this bucket
 */
-static uint8_t *ArrayKeyAdr(const Array * array, int offset, int key_len)
+static inline uint8_t *ArrayKeyAdr(const Array * array, int offset,
+    int key_len)
 {
     return (uint8_t *) array + 2 * sizeof(uint8_t) + offset * key_len;
 }
@@ -401,7 +413,7 @@ static uint8_t *ArrayKeyAdr(const Array * array, int offset, int key_len)
 /**
 **	Get the address of value at offset.
 */
-static void *ArrayValAdr(const Array * array, int offset, int key_len)
+static inline void *ArrayValAdr(const Array * array, int offset, int key_len)
 {
     return (void *)((uint8_t *) array + 2 * sizeof(uint8_t)
 	+ ArraySizeTable[array->Count] * key_len + offset * sizeof(size_t));
@@ -410,7 +422,7 @@ static void *ArrayValAdr(const Array * array, int offset, int key_len)
 /**
 **	Get the key length of an array bucket.
 */
-static int ArrayKeylen(const Array * array)
+static inline int ArrayKeylen(const Array * array)
 {
     return array->Common.Kind & 0x0F;
 }
@@ -418,7 +430,7 @@ static int ArrayKeylen(const Array * array)
 // -------------------------------------------------------------------------
 // Debug functions
 
-#ifdef DEBUG
+#ifdef ARRAY_DEBUG
 
 /**
 **	Dump array helper function.
@@ -439,8 +451,8 @@ static void ArrayDump0(FILE * stream, const Array * array, int level,
     kind = array->Common.Kind;
     // in this version the keysize is stored in kind
     my_len = kind & 0xF;
-    fprintf(stream, "%*s%8p: #%d/%d - %d(%d) (%8zx, %d)\n", level, "", array, count,
-	ArraySizeTable[count], kind, my_len, base_key, key_len);
+    fprintf(stream, "%*s%8p: #%d/%d - %d(%d) (%8zx, %d)\n", level, "", array,
+	count, ArraySizeTable[count], kind, my_len, base_key, key_len);
 
     if (kind & ArrayLeaf) {
 	for (i = 0; i <= count; ++i) {
@@ -458,8 +470,8 @@ static void ArrayDump0(FILE * stream, const Array * array, int level,
 	    key = ArrayFetchKey(ArrayKeyAdr(array, i, my_len), my_len);
 	    val = *(size_t *) ArrayValAdr(array, i, my_len);
 
-	    fprintf(stream, "%*s %0*zx:%08zx -> %08zx\n", level, "", my_len * 2, key,
-		key | base_key, val);
+	    fprintf(stream, "%*s %0*zx:%08zx -> %08zx\n", level, "",
+		my_len * 2, key, key | base_key, val);
 	}
     } else {
 	// XX..............  ................ 
@@ -625,6 +637,8 @@ size_t *ArrayIdx(const Array * array, size_t index)
 **
 **	@param array	dynamic array
 **	@param index	index into array
+**
+**	@returns value or 0, if not exisis.
 */
 size_t ArrayGet(const Array * array, size_t index)
 {
@@ -641,6 +655,7 @@ size_t ArrayGet(const Array * array, size_t index)
 **
 **	@param array	dynamic array
 **	@param index	index into array
+**	@param value	new value of index
 */
 size_t *ArraySet(Array * array, size_t index, size_t value)
 {
@@ -678,7 +693,7 @@ size_t *ArrayFirst(const Array * array, size_t * index)
 	    --sp;
 	    // printf("up %p(%d)\n", sp->Array, sp->Offset);
 	    if (++sp->Offset <= sp->Array->Count) {
-		size_t base_key;
+		// size_t base_key;
 		size_t key;
 		int key_len;
 		int offset;
@@ -694,7 +709,7 @@ size_t *ArrayFirst(const Array * array, size_t * index)
 		    if (key_len != sizeof(size_t)) {
 			abort();
 		    }
-		    base_key = 0;
+		    // base_key = 0;
 
 		    key =
 			ArrayFetchKey(ArrayKeyAdr(array, offset, key_len),
@@ -766,7 +781,7 @@ size_t *ArrayLast(const Array * array, size_t * index)
 	    --sp;
 	    // printf("\tup %p(%d)\n", sp->Array, sp->Offset);
 	    if (sp->Offset--) {
-		size_t base_key;
+		// size_t base_key;
 		size_t key;
 		int offset;
 		size_t *val;
@@ -781,7 +796,7 @@ size_t *ArrayLast(const Array * array, size_t * index)
 		    if (key_len != sizeof(size_t)) {
 			abort();
 		    }
-		    base_key = 0;
+		    // base_key = 0;
 
 		    key =
 			ArrayFetchKey(ArrayKeyAdr(array, offset, key_len),
@@ -1132,7 +1147,7 @@ static Array *ArrayNewRoot(const Array * array1, const Array * array2)
     val[1] = (Array *) array2;
 
     //printf("new root:\n");
-    //ArrayDump(array, 2);
+    //ArrayDump(stdout, array, 2);
 
     return array;
 }
@@ -1291,34 +1306,159 @@ void ArrayFree(Array * array)
 */
 size_t ArrayMemUsed(const Array * array)
 {
-    int total;
+    // int total;
 
-    total = 0;
+    // total = 0;
     printf("mem-used %p\n", array);
     return 0;
 }
 
 // -------------------------------------------------------------------------
 
-#ifdef TEST				// {
+#ifdef ARRAY_TEST			// {
+
+#include <getopt.h>
+#include <errno.h>
+#include <malloc.h>
+#include <sys/time.h>
+
+typedef size_t ArrayValue;
+typedef size_t ArrayIndex;
+
+// -------------------------------------------------------------------------
+
+#ifdef AllocMem
+
+/**
+**	better malloc
+**
+**	@param size	size of memory area to allocate
+*/
+inline void *AllocMem(size_t size)
+{
+    return malloc(size);
+}
+
+#endif
+
+#ifdef FreeMem
+
+/**
+**	better free
+*/
+inline void FreeMem(void *data, __attribute__ ((unused)) size_t size)
+{
+    free(data);
+}
+
+#endif
+
+// -------------------------------------------------------------------------
+//	64 bit pseudo random generator
+
+/**
+**	State type for the lfsr258 pseudo random generator.
+**
+**	The seeds must be set before calling the generator and,
+**	**must** be larger than 1, 511, 4095, 131071 and 8388607 respectively.
+**
+**	@see lfsr258() @see lfsr258_init()
+*/
+typedef struct __lfsr258__
+{
+    uint64_t S[5];			///< 320bit pool
+} lfsr258_t;
+
+/**
+**	64-bit LFSR generator of L'Ecuyer.
+**
+**	@param state	generator state pool
+*/
+uint64_t lfsr258(lfsr258_t * state)
+{
+    state->S[0] =
+	((state->S[0] & UINT64_C(0xFFFFFFFFFFFFFFFE)) << 10) ^ (((state->
+		S[0] << 1)
+	    ^ state->S[0]) >> 53);
+    state->S[1] =
+	((state->S[1] & UINT64_C(0xFFFFFFFFFFFFFE00)) << 5) ^ (((state->
+		S[1] << 24)
+	    ^ state->S[1]) >> 50);
+    state->S[2] =
+	((state->S[2] & UINT64_C(0xFFFFFFFFFFFFF000)) << 29) ^ (((state->
+		S[2] << 3)
+	    ^ state->S[2]) >> 23);
+    state->S[3] =
+	((state->S[3] & UINT64_C(0xFFFFFFFFFFFE0000)) << 23) ^ (((state->
+		S[3] << 5)
+	    ^ state->S[3]) >> 24);
+    state->S[4] =
+	((state->S[4] & UINT64_C(0xFFFFFFFFFF800000)) << 8) ^ (((state->
+		S[4] << 3) ^ state->S[4]) >> 33);
+
+    return state->S[0] ^ state->S[1] ^ state->S[2] ^ state->S[3] ^ state->S[4];
+}
+
+/**
+**	Initialize the state of the lfsr258 random generator with seed.
+**
+**	@param state	generator state pool
+*/
+void lfsr258_init(unsigned seed, lfsr258_t * state)
+{
+    state->S[0] = (seed ? seed : 1) * UINT64_C(0x5851F42D4C957F2D)
+	+ UINT64_C(0x14057B7EF767814F);
+    state->S[1] = state->S[0] * UINT64_C(0x5851F42D4C957F2D)
+	+ UINT64_C(0x14057B7EF767814F);
+    state->S[2] = state->S[1] * UINT64_C(0x5851F42D4C957F2D)
+	+ UINT64_C(0x14057B7EF767814F);
+    state->S[3] = state->S[2] * UINT64_C(0x5851F42D4C957F2D)
+	+ UINT64_C(0x14057B7EF767814F);
+    state->S[4] = state->S[3] * UINT64_C(0x5851F42D4C957F2D)
+	+ UINT64_C(0x14057B7EF767814F);
+
+    if (!(state->S[0] & UINT64_C(0xFFFFFFFFFFFFFFFE))) {
+	state->S[0] |= 1 + ~UINT64_C(0xFFFFFFFFFFFFFFFE);
+    }
+    if (!(state->S[1] & UINT64_C(0xFFFFFFFFFFFFFE00))) {
+	state->S[1] |= 1 + ~UINT64_C(0xFFFFFFFFFFFFFE00);
+    }
+    if (!(state->S[2] & UINT64_C(0xFFFFFFFFFFFFF000))) {
+	state->S[2] |= 1 + ~UINT64_C(0xFFFFFFFFFFFFF000);
+    }
+    if (!(state->S[3] & UINT64_C(0xFFFFFFFFFFFE0000))) {
+	state->S[3] |= 1 + ~UINT64_C(0xFFFFFFFFFFFE0000);
+    }
+    if (!(state->S[4] & UINT64_C(0xFFFFFFFFFF800000))) {
+	state->S[4] |= 1 + ~UINT64_C(0xFFFFFFFFFF800000);
+    }
+}
+
+// -------------------------------------------------------------------------
 
 /**
 **	Test the array.
+**
+**	@param debug	enable debug
+**	@param loops	run the test 'loops' times
 */
-void ArrayTest(int debug, int loops)
+static void ArrayTest(int debug, int loops)
 {
+    lfsr258_t lfsr_state[1];
     int i;
     int j;
     size_t *value;
     Array *array;
 
-    array = NULL;
+    lfsr258_init(314159265, lfsr_state);
+
+    array = ArrayNew();
     for (i = 0; i < loops; ++i) {
 	size_t v;
 	size_t old;
 
-	// v = rand() * 13;
-	v = rand() >> 4;
+	// v = lfsr258(lfsr_state) * 13;
+	v = lfsr258(lfsr_state) >> 4;
 	// v = -1 - i;
 	// v = -1 - i * 3;
 	// v = i;
@@ -1331,14 +1471,15 @@ void ArrayTest(int debug, int loops)
 	}
 	if (debug) {
 	    printf("\n");
-	    ArrayDump(array, 0);
+	    ArrayDump(stdout, array, 0);
 	}
 	if (*value != v) {
 	    printf("not value %zx!=%zx\n", *value, v);
 	    abort();
 	}
 	if (v != ArrayGet(array, (size_t) v)) {
-	    printf("ArrayGet failed\n");
+	    printf("ArrayGet failed %zx!=%zx\n", ArrayGet(array, (size_t) v),
+		v);
 	    abort();
 	}
 
@@ -1374,7 +1515,120 @@ void ArrayTest(int debug, int loops)
 	}
     }
     printf("After %d loops\n", loops);
-    ArrayDump(array, 0);
+    ArrayDump(stdout, array, 0);
+}
+
+/**
+**	Benchmark.
+*/
+static void ArrayBenchmark(int debug, const char *bench, const char *query,
+    __attribute__ ((unused))
+    int loops)
+{
+    FILE *stream;
+    ArrayIndex index;
+    Array *array;
+    int c;
+    unsigned insert_n;
+    unsigned query_n;
+    struct timeval start;
+    struct timeval stop;
+    double insert_real_time;
+    double query_real_time;
+
+    if (!(stream = fopen(bench ? bench : "keys3", "rb"))) {
+	fprintf(stderr, "can't open file '%s': %s\n", bench ? bench : "keys3",
+	    strerror(errno));
+	return;
+    }
+
+    array = ArrayNew();
+    insert_n = 0;
+    index = 0;
+    gettimeofday(&start, NULL);
+    while ((c = fgetc(stream)) != EOF) {
+	if (c) {
+	    index *= 256;
+	    index += c;
+	} else {
+	    //index *= 256;
+	    //index += c;
+	    // printf("%jx\n", index);
+	    ArrayIns(&array, index, index);
+	    insert_n++;
+	    index = 0;
+	}
+    }
+    gettimeofday(&stop, NULL);
+    insert_real_time = 1000000.0 * (stop.tv_sec - start.tv_sec)
+	+ (stop.tv_usec - start.tv_usec);
+    fclose(stream);
+
+    if (query) {
+	if (!(stream = fopen(bench ? query : "query3", "rb"))) {
+	    fprintf(stderr, "can't open file '%s': %s\n",
+		bench ? bench : "query3", strerror(errno));
+	    return;
+	}
+
+	query_n = 0;
+	index = 0;
+	gettimeofday(&start, NULL);
+	while ((c = fgetc(stream)) != EOF) {
+	    if (c) {
+		index *= 256;
+		index += c;
+	    } else {
+		ArrayValue value;
+
+		value = ArrayGet(array, index);
+		if (value && value != index) {
+		    fprintf(stderr, "internal error %jx\n", (uintmax_t) index);
+		}
+		query_n++;
+		index = 0;
+	    }
+	}
+	gettimeofday(&stop, NULL);
+	query_real_time = 1000000.0 * (stop.tv_sec - start.tv_sec)
+	    + (stop.tv_usec - start.tv_usec);
+	fclose(stream);
+    }
+
+    if (debug) {
+	ArrayDump(stdout, array, 0);
+    }
+
+    printf("%.2fs time to insert %d keys, %.2fus/key\n",
+	insert_real_time / 1000000, insert_n, insert_real_time / insert_n);
+    if (query) {
+	printf("%.2fs time to query %d keys, %.2fus/key\n",
+	    query_real_time / 1000000, query_n, query_real_time / query_n);
+    }
+
+    malloc_stats();
+}
+
+/**
+**	Print usage.
+*/
+static void PrintUsage(void)
+{
+    printf("core-array Version " VERSION
+#ifdef GIT_REV
+	"(GIT-" GIT_REV ")"
+#endif
+	", (c) 2009, 2010, 2015 by Lutz Sammer\n"
+	"\tLicense AGPLv3: GNU Affero General Public License version 3\n");
+    printf
+	("Usage: array_test [-?|-h] [-v] [-b keys] [-d] [-l loops] [-q query]\n"
+	"\t-d\t\tuse debug, more increase debug\n"
+	"\t-b keys\trun benchmark inserting 'keys'\n"
+	"\t-l loops\trun debug/benchmark 'loops' times\n"
+	"\t-q query\trun benchmark quering 'query'\n"
+	"\t-? -h\t\tdisplay this message\n"
+	"\t-v\t\tdisplay version information\n"
+	"Only idiots print usage on stderr!\n");
 }
 
 /**
@@ -1387,36 +1641,48 @@ void ArrayTest(int debug, int loops)
 */
 int main(int argc, char *const argv[])
 {
+    const char *bench;
+    const char *query;
     int debug;
     int loops;
 
+    bench = NULL;
+    query = NULL;
     debug = 0;
     loops = 100;
+
     //
     //	Parse command line arguments
     //
     for (;;) {
-	switch (getopt(argc, argv, "hv?-dl:")) {
+	switch (getopt(argc, argv, "hv?-b:dl:q:")) {
 
 	    case EOF:
 		break;
+	    case 'b':			// enabled benchmark
+		bench = optarg;
+		continue;
 	    case 'd':			// enabled debug
 		debug = 1;
 		continue;
 	    case 'l':			// test loops
 		loops = strtol(optarg, NULL, 0);
 		continue;
+	    case 'q':			// enabled benchmark
+		query = optarg;
+		continue;
 	    case 'v':			// print version
 		// PrintVersion();
+		PrintUsage();
 		return 0;
 	    case '?':
 	    case 'h':			// help usage
 		// PrintVersion();
-		// PrintUsage();
+		PrintUsage();
 		return 0;
 	    case '-':
 		// PrintVersion();
-		// PrintUsage();
+		PrintUsage();
 		fprintf(stderr, "\nWe need no long options\n");
 		return -1;
 	    case ':':
@@ -1440,7 +1706,7 @@ int main(int argc, char *const argv[])
     //
     //	  main loop
     //
-    if (1) {
+    if (0) {
 	int i;
 	char *p;
 
@@ -1449,22 +1715,28 @@ int main(int argc, char *const argv[])
 	    printf("%p %d\n", p, (int)(((ptrdiff_t) p) & 0xF));
 	}
     }
-    printf("void* %zd\n", sizeof(void *));
-    printf("double %zd\n", sizeof(double));
-    printf("ptrdiff_t %zd\n", sizeof(ptrdiff_t));
-    printf("size_t %zd\n", sizeof(size_t));
-    printf("4/1 %zd\n", sizeof(struct _bucket_b4k1_));
-    printf("4/2 %zd\n", sizeof(struct _bucket_b4k2_));
+    if (0) {
+	printf("void* %zd\n", sizeof(void *));
+	printf("double %zd\n", sizeof(double));
+	printf("ptrdiff_t %zd\n", sizeof(ptrdiff_t));
+	printf("size_t %zd\n", sizeof(size_t));
+	printf("4/1 %zd\n", sizeof(struct _bucket_b4k1_));
+	printf("4/2 %zd\n", sizeof(struct _bucket_b4k2_));
 #ifdef ARRAY64
-    printf("8/1 %zd\n", sizeof(struct _bucket_b8k1_));
-    printf("7/1 %zd\n", sizeof(struct _bucket_b7k1_));
+	printf("8/1 %zd\n", sizeof(struct _bucket_b8k1_));
+	printf("7/1 %zd\n", sizeof(struct _bucket_b7k1_));
 #endif
+    }
 
-    ArrayTest(debug, loops);
+    if (bench || query) {
+	ArrayBenchmark(debug, bench, query, loops);
+    } else {
+	ArrayTest(debug, loops);
+    }
 
     return 0;
 }
 
-#endif // } TEST
+#endif // } ARRAY_TEST
 
 /// @}
