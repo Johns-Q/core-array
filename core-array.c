@@ -1,7 +1,8 @@
 ///
 ///	@file core-array.c	@brief core array functions
 ///
-///	Copyright (c) 2009, 2010, 2015 by Lutz Sammer.	All Rights Reserved.
+///	Copyright (c) 2009, 2010, 2015, 2016 by Lutz Sammer.
+///		All Rights Reserved.
 ///
 ///	Contributor(s):
 ///
@@ -296,9 +297,6 @@ static const int ArrayBurstSize = 256;
 
 // -------------------------------------------------------------------------
 
-extern inline void *AllocMem(size_t);
-extern inline void FreeMem(void *, size_t);
-
 #ifndef AllocMem
 
 /**
@@ -311,6 +309,10 @@ static inline void *AllocMem(size_t size)
     return malloc(size);
 }
 
+#else
+
+extern inline void *AllocMem(size_t);
+
 #endif
 
 #ifndef FreeMem
@@ -322,6 +324,10 @@ static inline void FreeMem(void *data, __attribute__ ((unused)) size_t size)
 {
     free(data);
 }
+
+#else
+
+extern inline void FreeMem(void *, size_t);
 
 #endif
 
