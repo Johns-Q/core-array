@@ -1,7 +1,7 @@
 #
 #	@file Makefile		@brief core general purpose array Makefile.
 #
-#	Copyright (c) 2010, 2015 by Lutz Sammer.  All Rights Reserved.
+#	Copyright (c) 2010, 2015, 2021 by Lutz Sammer.  All Rights Reserved.
 #
 #	Contributor(s):
 #
@@ -20,7 +20,7 @@
 #	$Id$
 #----------------------------------------------------------------------------
 
-VERSION := "0.51"
+VERSION := "0.52"
 GIT_REV := $(shell git describe --always 2>/dev/null)
 
 CC	:= gcc

@@ -1,7 +1,7 @@
 ///
 ///	@file core-array.c	@brief core array functions
 ///
-///	Copyright (c) 2009, 2010, 2015, 2016 by Lutz Sammer.
+///	Copyright (c) 2009, 2010, 2015, 2016, 2021 by Lutz Sammer.
 ///		All Rights Reserved.
 ///
 ///	Contributor(s):
@@ -347,19 +347,26 @@ static inline void ArrayStoreKey(uint8_t * adr, const int cnt, size_t key)
 #ifdef ARRAY64
 	case 8:
 	    adr[7] = key >> 56;
+	    // fallthrough
 	case 7:
 	    adr[6] = key >> 48;
+	    // fallthrough
 	case 6:
 	    adr[5] = key >> 40;
+	    // fallthrough
 	case 5:
 	    adr[4] = key >> 32;
 #endif
+	    // fallthrough
 	case 4:
 	    adr[3] = key >> 24;
+	    // fallthrough
 	case 3:
 	    adr[2] = key >> 16;
+	    // fallthrough
 	case 2:
 	    adr[1] = key >> 8;
+	    // fallthrough
 	case 1:
 	    adr[0] = key;
 	    break;
@@ -383,19 +390,26 @@ static inline size_t ArrayFetchKey(const uint8_t * adr, const int cnt)
 #ifdef ARRAY64
 	case 8:
 	    key |= (size_t) adr[7] << 56;
+	    // fallthrough
 	case 7:
 	    key |= (size_t) adr[6] << 48;
+	    // fallthrough
 	case 6:
 	    key |= (size_t) adr[5] << 40;
+	    // fallthrough
 	case 5:
 	    key |= (size_t) adr[4] << 32;
 #endif
+	    // fallthrough
 	case 4:
 	    key |= (size_t) adr[3] << 24;
+	    // fallthrough
 	case 3:
 	    key |= (size_t) adr[2] << 16;
+	    // fallthrough
 	case 2:
 	    key |= (size_t) adr[1] << 8;
+	    // fallthrough
 	case 1:
 	    key |= (size_t) adr[0];
 	    break;
@@ -1178,12 +1192,17 @@ size_t *ArrayIns(Array ** root, size_t index, size_t value)
 
     if (!(array = *root)) {		// empty array
 #ifdef ARRAY64
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+
 	*root = array = AllocMem(sizeof(array->B8K1));
 	array->B8K1.Count = 0;
 	array->B8K1.Kind = ArrayLeaf | ArrayKeylen8;
 	ArrayStoreKey(array->B8K1.Key[0], sizeof(size_t), index);
-	array->B8K1.Val[0] = value;
-	return &array->B8K1.Val[0];
+	val = &array->B8K1.Val[0];
+	*val = value;
+	return val; 
+#pragma GCC diagnostic pop
 #else
 	*root = array = AllocMem(sizeof(array->B4K1));
 	array->B4K1.Count = 0;
@@ -1624,7 +1643,7 @@ static void PrintUsage(void)
 #ifdef GIT_REV
 	"(GIT-" GIT_REV ")"
 #endif
-	", (c) 2009, 2010, 2015 by Lutz Sammer\n"
+	", (c) 2009, 2010, 2015, 2016, 2021 by Lutz Sammer\n"
 	"\tLicense AGPLv3: GNU Affero General Public License version 3\n");
     printf
 	("Usage: array_test [-?|-h] [-v] [-b keys] [-d] [-l loops] [-q query]\n"
