@@ -150,7 +150,7 @@ struct _bucket_b8k1_
     uint8_t Kind;			///< kind of bucket
     uint8_t Key[1][8];			///< 8 byte * 1 key
     size_t Val[1];			///< 1 value
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct _bucket_b8k2_
 {
@@ -158,7 +158,7 @@ struct _bucket_b8k2_
     uint8_t Kind;			///< kind of bucket
     uint8_t Key[2][8];			///< 8 byte * 2 keys
     size_t Val[2];			///< 2 values
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct _bucket_b8k4_
 {
@@ -166,7 +166,7 @@ struct _bucket_b8k4_
     uint8_t Kind;			///< kind of bucket
     uint8_t Key[4][8];			///< 8 byte * 4 keys
     size_t Val[4];			///< 4 values
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 // 1 + 7 + 8 => 16
 struct _bucket_b7k1_
@@ -175,7 +175,7 @@ struct _bucket_b7k1_
     uint8_t Kind;			///< kind of bucket
     uint8_t Key[1][7];			///< 7 byte * 1 key
     size_t Val[1];			///< 1 value
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct _bucket_b8k256_			///< 256* values 8 bytes key
 {
@@ -183,7 +183,7 @@ struct _bucket_b8k256_			///< 256* values 8 bytes key
     uint8_t Kind;			///< kind of bucket
     uint8_t Key[256][8];		///< 4 byte * 256 keys
     size_t Val[256];			///< 1 value
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 #endif
 
@@ -193,7 +193,7 @@ struct _bucket_b4k1_			///< 1* values 4 bytes key
     uint8_t Kind;			///< kind of bucket
     uint8_t Key[1][4];			///< 4 byte * 1 key
     size_t Val[1];			///< 1 value
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct _bucket_b4k2_			///< 2* values 4 bytes key
 {
@@ -201,7 +201,7 @@ struct _bucket_b4k2_			///< 2* values 4 bytes key
     uint8_t Kind;			///< kind of bucket
     uint8_t Key[2][4];			///< 4 byte * 2 keys
     size_t Val[2];			///< 2 values
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct _bucket_b4k4_			///< 4* values 4 bytes key
 {
@@ -209,7 +209,7 @@ struct _bucket_b4k4_			///< 4* values 4 bytes key
     uint8_t Kind;			///< kind of bucket
     uint8_t Key[4][4];			///< 4 byte * 4 keys
     size_t Val[4];			///< 4 values
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 struct _bucket_b4k256_			///< 256* values 4 bytes key
 {
@@ -217,7 +217,7 @@ struct _bucket_b4k256_			///< 256* values 4 bytes key
     uint8_t Kind;			///< kind of bucket
     uint8_t Key[256][4];		///< 4 byte * 256 keys
     size_t Val[256];			///< 256 values
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 /**
 **	Array data structure.
@@ -320,7 +320,8 @@ extern inline void *AllocMem(size_t);
 /**
 **	better free
 */
-static inline void FreeMem(void *data, __attribute__ ((unused)) size_t size)
+static inline void FreeMem(void *data, __attribute__((unused))
+    size_t size)
 {
     free(data);
 }
@@ -389,29 +390,29 @@ static inline size_t ArrayFetchKey(const uint8_t * adr, const int cnt)
     switch (cnt) {
 #ifdef ARRAY64
 	case 8:
-	    key |= (size_t) adr[7] << 56;
+	    key |= (size_t)adr[7] << 56;
 	    // fallthrough
 	case 7:
-	    key |= (size_t) adr[6] << 48;
+	    key |= (size_t)adr[6] << 48;
 	    // fallthrough
 	case 6:
-	    key |= (size_t) adr[5] << 40;
+	    key |= (size_t)adr[5] << 40;
 	    // fallthrough
 	case 5:
-	    key |= (size_t) adr[4] << 32;
+	    key |= (size_t)adr[4] << 32;
 #endif
 	    // fallthrough
 	case 4:
-	    key |= (size_t) adr[3] << 24;
+	    key |= (size_t)adr[3] << 24;
 	    // fallthrough
 	case 3:
-	    key |= (size_t) adr[2] << 16;
+	    key |= (size_t)adr[2] << 16;
 	    // fallthrough
 	case 2:
-	    key |= (size_t) adr[1] << 8;
+	    key |= (size_t)adr[1] << 8;
 	    // fallthrough
 	case 1:
-	    key |= (size_t) adr[0];
+	    key |= (size_t)adr[0];
 	    break;
     }
     return key;
@@ -483,12 +484,12 @@ static void ArrayDump0(FILE * stream, const Array * array, int level,
 	    if (my_len == sizeof(size_t)) {
 		base_key = 0;
 	    } else {
-		base_key &= ((size_t) ~ 0) << (my_len * 8);
+		base_key &= ((size_t)~0) << (my_len * 8);
 		fprintf(stream, "basekey %zx: \n", base_key);
 	    }
 
 	    key = ArrayFetchKey(ArrayKeyAdr(array, i, my_len), my_len);
-	    val = *(size_t *) ArrayValAdr(array, i, my_len);
+	    val = *(size_t *)ArrayValAdr(array, i, my_len);
 
 	    fprintf(stream, "%*s %0*zx:%08zx -> %08zx\n", level, "",
 		my_len * 2, key, key | base_key, val);
@@ -500,7 +501,7 @@ static void ArrayDump0(FILE * stream, const Array * array, int level,
 	if (key_len < 0) {
 	    key_len = 0;
 	}
-	if (base_key & ~(size_t) 0 << (key_len * 8)) {
+	if (base_key & ~(size_t)0 << (key_len * 8)) {
 	    fprintf(stream, "too many bits\n");
 	}
 	for (i = 0; i <= count; ++i) {
@@ -510,7 +511,7 @@ static void ArrayDump0(FILE * stream, const Array * array, int level,
 	    key = ArrayFetchKey(ArrayKeyAdr(array, i, my_len), my_len);
 	    key <<= (key_len * 8);
 	    key |= base_key;
-	    val = *(size_t *) ArrayValAdr(array, i, my_len);
+	    val = *(size_t *)ArrayValAdr(array, i, my_len);
 
 	    fprintf(stream, "%*s %08zx -> %08zx\n", level, "", key, val);
 	    ArrayDump0(stream, (Array *) val, level + 1, key, key_len);
@@ -547,7 +548,7 @@ void ArrayDump(FILE * stream, const Array * array, int level)
 **	@returns offset in array of found index key.
 */
 static int ArrayFindIndexInLeaf(const Array * array, size_t index,
-    size_t * result)
+    size_t *result)
 {
     int i;
     int n;
@@ -575,7 +576,7 @@ static int ArrayFindIndexInLeaf(const Array * array, size_t index,
 **	than I need one lookup less.
 */
 static int ArrayFindIndexInNode(const Array * array, size_t index,
-    size_t * result)
+    size_t *result)
 {
     int i;
     int n;
@@ -697,7 +698,7 @@ size_t *ArraySet(Array * array, size_t index, size_t value)
 **	@param array	dynamic array
 **	@param index	index into array
 */
-size_t *ArrayFirst(const Array * array, size_t * index)
+size_t *ArrayFirst(const Array * array, size_t *index)
 {
     if (array) {
 	ArrayStack stack[sizeof(size_t)];
@@ -757,7 +758,7 @@ size_t *ArrayFirst(const Array * array, size_t * index)
 **	@param array	dynamic array
 **	@param index	index into array
 */
-size_t *ArrayNext(const Array * array, size_t * index)
+size_t *ArrayNext(const Array * array, size_t *index)
 {
     if (*index == SIZE_MAX) {
 	return NULL;
@@ -775,7 +776,7 @@ size_t *ArrayNext(const Array * array, size_t * index)
 **	@param array	dynamic array
 **	@param index	index into array
 */
-size_t *ArrayLast(const Array * array, size_t * index)
+size_t *ArrayLast(const Array * array, size_t *index)
 {
     if (array) {
 	ArrayStack stack[sizeof(size_t)];
@@ -844,7 +845,7 @@ size_t *ArrayLast(const Array * array, size_t * index)
 **	@param array	dynamic array
 **	@param index	index into array
 */
-size_t *ArrayPrev(const Array * array, size_t * index)
+size_t *ArrayPrev(const Array * array, size_t *index)
 {
     if (*index == 0) {
 	return NULL;
@@ -1201,7 +1202,7 @@ size_t *ArrayIns(Array ** root, size_t index, size_t value)
 	ArrayStoreKey(array->B8K1.Key[0], sizeof(size_t), index);
 	val = &array->B8K1.Val[0];
 	*val = value;
-	return val; 
+	return val;
 #pragma GCC diagnostic pop
 #else
 	*root = array = AllocMem(sizeof(array->B4K1));
@@ -1258,7 +1259,7 @@ size_t *ArrayIns(Array ** root, size_t index, size_t value)
 	    ArrayFetchKey(ArrayKeyAdr(array2, 0, ArrayKeylen(array2)),
 	    ArrayKeylen(array2));
 	index -= index % ArrayBurstSize;
-	value = (size_t) array2;
+	value = (size_t)array2;
 	++sp->Offset;
     }
 
@@ -1371,7 +1372,8 @@ inline void *AllocMem(size_t size)
 /**
 **	better free
 */
-inline void FreeMem(void *data, __attribute__ ((unused)) size_t size)
+inline void FreeMem(void *data, __attribute__((unused))
+    size_t size)
 {
     free(data);
 }
@@ -1489,7 +1491,7 @@ static void ArrayTest(int debug, int loops)
 	// v = i;
 	// v = i * 3;
 	// v = i + 5;
-	value = ArrayIns(&array, (size_t) v, (size_t) v);
+	value = ArrayIns(&array, (size_t)v, (size_t)v);
 	if (!value) {
 	    printf("null value\n");
 	    abort();
@@ -1502,8 +1504,8 @@ static void ArrayTest(int debug, int loops)
 	    printf("not value %zx!=%zx\n", *value, v);
 	    abort();
 	}
-	if (v != ArrayGet(array, (size_t) v)) {
-	    printf("ArrayGet failed %zx!=%zx\n", ArrayGet(array, (size_t) v),
+	if (v != ArrayGet(array, (size_t)v)) {
+	    printf("ArrayGet failed %zx!=%zx\n", ArrayGet(array, (size_t)v),
 		v);
 	    abort();
 	}
@@ -1547,7 +1549,7 @@ static void ArrayTest(int debug, int loops)
 **	Benchmark.
 */
 static void ArrayBenchmark(int debug, const char *bench, const char *query,
-    __attribute__ ((unused))
+    __attribute__((unused))
     int loops)
 {
     FILE *stream;
@@ -1737,7 +1739,7 @@ int main(int argc, char *const argv[])
 
 	for (i = 0; i < 3; ++i) {
 	    p = malloc(1);
-	    printf("%p %d\n", p, (int)(((ptrdiff_t) p) & 0xF));
+	    printf("%p %d\n", p, (int)(((ptrdiff_t)p) & 0xF));
 	}
     }
     if (0) {
